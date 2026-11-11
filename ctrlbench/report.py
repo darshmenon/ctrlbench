@@ -9,6 +9,7 @@ import numpy as np
 LABEL = {"ik_dh": "IK, UR3 DH model", "ik_mj": "IK, MuJoCo model", "imp_law": "Impedance law only",
          "imp_pin": "Impedance with Pinocchio", "rcl": "ROS 2 round trip at 500 Hz"}
 UNIT = {"rcl": "latency"}
+AT_CLOCK_FLOOR = {"imp_law"}   # C++ median is below what the timer resolves
 
 
 def load(out):
@@ -95,23 +96,30 @@ def plots(out, agg):
     fig, ax = plt.subplots(figsize=(10, 4.6))
     w = 0.38
     for j, impl in enumerate(("py", "cpp")):
-        xs, med, p99 = [], [], []
+        xs, med, p99, bn = [], [], [], []
         for i, b in enumerate(benches):
             a = next((a for a in agg if a["bench"] == b and a["impl"] == impl), None)
             if a:
-                xs.append(i + (j - 0.5) * w); med.append(a["median_us"]); p99.append(a["p99_us"])
+                xs.append(i + (j - 0.5) * w); med.append(a["median_us"]); p99.append(a["p99_us"]); bn.append(b)
         bars = ax.bar(xs, med, w, color=col[impl], label=name[impl])
         ax.errorbar(xs, med, yerr=[np.zeros(len(med)), np.array(p99) - np.array(med)], fmt="none", ecolor="k", capsize=3, lw=1)
-        for x, m in zip(xs, med):
-            ax.text(x, m * 1.15, fmt(m), ha="center", va="bottom", fontsize=8)
+        for bar, x, m, b in zip(bars, xs, med, bn):
+            floor = impl == "cpp" and b in AT_CLOCK_FLOOR
+            ax.text(x, m * 1.15, fmt(m) + ("*" if floor else ""), ha="center", va="bottom", fontsize=8)
+            if floor:
+                bar.set_hatch("//")
+                bar.set_edgecolor("white")
     ax.set_yscale("log")
     ax.set_xticks(range(len(benches)))
     ax.set_xticklabels([LABEL[b].replace(", ", ",\n").replace(" at ", "\nat ") for b in benches], fontsize=9)
     ax.set_ylabel("time per call, microseconds (log scale)")
     ax.set_title("C++ vs Python: median per call, whisker up to p99")
+    if any(b in AT_CLOCK_FLOOR for b in benches):
+        fig.text(0.01, 0.01, "* hatched: C++ median is at the timer's resolution floor (35 ns per clock read), "
+                 "so the ratio is not reliable; read it as 'tens of times faster'.", fontsize=8, color="#444", ha="left")
     ax.legend()
     ax.grid(axis="y", alpha=0.3, which="both")
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(f"{out}/bars.png", dpi=140)
     plt.close(fig)
     # distributions, pooled over repeats
