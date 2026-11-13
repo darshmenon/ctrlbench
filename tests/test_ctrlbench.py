@@ -10,6 +10,7 @@ from ctrlbench import common as C
 BUILD = os.environ.get("CTRLBENCH_BUILD", "build")
 needs_model = pytest.mark.skipif(not os.path.isfile(C.UR3_XML), reason="UR3 MJCF not found, set CTRLBENCH_UR3_XML")
 needs_build = pytest.mark.skipif(not os.path.isfile(f"{BUILD}/ik_dh"), reason="C++ not built (make build)")
+needs_imp = pytest.mark.skipif(not os.path.isfile(f"{BUILD}/imp"), reason="imp not built (needs Pinocchio)")
 
 
 def test_stats_percentiles_and_jitter():
@@ -50,6 +51,7 @@ def test_mujoco_and_dh_ik_agree_on_iteration_counts():
 
 @needs_model
 def test_pinocchio_path_matches_the_precomputed_law():
+    pytest.importorskip("pinocchio", reason="Python Pinocchio not installed")
     s = C.make_states(25)
     a, b = B.run_imp_law(s), B.run_imp_pin(s)
     assert np.allclose(a[:, 2], b[:, 2], atol=1e-8)
@@ -68,8 +70,9 @@ def test_cpp_ik_matches_python(tmp_path):
 
 
 @needs_model
-@needs_build
+@needs_imp
 def test_cpp_impedance_matches_python(tmp_path):
+    pytest.importorskip("pinocchio", reason="Python Pinocchio not installed")
     s = C.make_states(20)
     inp = tmp_path / "s.csv"
     C.write_csv(inp, s)
