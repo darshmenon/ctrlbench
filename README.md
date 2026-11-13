@@ -1,5 +1,7 @@
 # ctrlbench
 
+[![CI](https://github.com/darshmenon/ctrlbench/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/darshmenon/ctrlbench/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/darshmenon/ctrlbench)](https://github.com/darshmenon/ctrlbench/releases) [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![C%2B%2B](https://img.shields.io/badge/C%2B%2B-17-lightgrey)
+
 A measured C++ vs Python comparison of the building blocks of arm control, on a UR3, on one real (busy) machine. Every implementation pair is first checked to give the same answer, then timed many times.
 
 ![median time per call, C++ vs Python](results/bars.png)
