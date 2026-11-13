@@ -1,0 +1,30 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    env:
+      CTRLBENCH_UR3_XML: ${{ github.workspace }}/models/UR3_ROS2_PICK_AND_PLACE/ur_rl_training/models/ur3/ur3.xml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Fetch the UR3 model
+        uses: actions/checkout@v4
+        with:
+          repository: darshmenon/UR3_ROS2_PICK_AND_PLACE
+          path: models/UR3_ROS2_PICK_AND_PLACE
+          sparse-checkout: ur_rl_training/models/ur3
+      - name: Install the C++ toolchain and Eigen
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ libeigen3-dev
+      - name: Install ctrlbench
+        run: pip install ".[test]"
+      - name: Build the C++ benchmarks
+        run: make build
+      - name: Tests (Python and C++ agree)
+        run: pytest -q
